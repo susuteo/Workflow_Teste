@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\Livro;
 use Illuminate\Support\Collection;
 use Uspdev\Workflow\Workflow;
+use Illuminate\Support\Facades\Auth;
 
 class EmprestimoController extends Controller
 {
@@ -59,14 +60,13 @@ class EmprestimoController extends Controller
         if($livro->handBook())
             {
                 $emprestimo = Emprestimo::create([
-                    'user_id' => Auth()->user()->id,
+                    'user_id' => Auth::id(),
                     'livro_id' => $livro_id
                 ]);
                 
                 $object = Workflow::start('emprestimo_livro_simples', $emprestimo);
-
                 // Aplica a transitção para que os bibliotecários sejam notificados, e já passa o pedido para análise.
-                $object->apply('tr_enviar', user: Auth()->user());
+                $object->apply('tr_enviar', user: Auth::user());
 
                 return redirect()->route('emprestimos.fromUser')->with('alert-success', 'Empréstimo do livro \'' . $livro->titulo . '\' realizado com sucesso');
             }
@@ -113,7 +113,7 @@ class EmprestimoController extends Controller
      */
     public function showUserEmprestimos(): View
     {
-        $user_emprestimos = Emprestimo::getAllFromUser(Auth()->user()->id);
+        $user_emprestimos = Emprestimo::getAllFromUser(Auth::id());
         return view('emprestimos.emprestimos-index', ['emprestimos' => $user_emprestimos, 'header' => 'Meus empréstimos']);
     }
 
@@ -123,7 +123,7 @@ class EmprestimoController extends Controller
      */
     public function showAntendimentos(): View
     {
-        $workflowObjects = Workflow::getUserRelatedObjects(Auth()->user());
+        $workflowObjects = Workflow::getUserRelatedObjects(Auth::user());
         
         /** @var Collection<int, Emprestimo> */
         $emprestimos = collect();
@@ -142,7 +142,6 @@ class EmprestimoController extends Controller
         
         $emprestimo = Emprestimo::find($emprestimo_id);
         $workflowObjectData = Workflow::getObjectData($emprestimo->getWorkflowObject());
-
         return view('emprestimos.emprestimos-show', ['emprestimo' => $emprestimo, 'workflowObjectData' => $workflowObjectData]);
     }
 }
