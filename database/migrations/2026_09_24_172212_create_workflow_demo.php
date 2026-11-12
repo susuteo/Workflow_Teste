@@ -120,10 +120,9 @@ class CreateWorkflowDemo extends Migration
             'fields' => '[ 
                 { 
                     "name": "user_codpes", 
-                    "type": "text", 
+                    "type": "pessoa-usp", 
                     "label": "Código do Bibliotecário", 
-                    "required": true, 
-                    "validation_rule": "max:8" 
+                    "required": true
                 }, 
                 [ 
                     { 
