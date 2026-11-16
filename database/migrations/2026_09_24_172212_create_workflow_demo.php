@@ -197,7 +197,7 @@ class CreateWorkflowDemo extends Migration
                         "tos": [
                             "emprestado"
                         ],
-                        "form": "registrar_retirada",
+                        "form": "blame_bibliotecario",
                         "bindings": [
                             {
                                 "attribute": "bibliotecario_ret",
@@ -226,7 +226,7 @@ class CreateWorkflowDemo extends Migration
                         "tos": [
                             "finalizado"
                         ],
-                        "form": "conferencia_devolucao",
+                        "form": "blame_bibliotecario",
                         "bindings": [
                             {
                                 "attribute": "bibliotecario_conf",
@@ -247,7 +247,7 @@ class CreateWorkflowDemo extends Migration
                         "tos": [
                             "multa"
                         ],
-                        "form": "conferencia_devolucao",
+                        "form": "blame_bibliotecario",
                         "bindings": [
                             {
                                 "attribute": "bibliotecario_conf",
@@ -277,7 +277,7 @@ class CreateWorkflowDemo extends Migration
                 ]
             }',]);
 
-       $form_demo =  Request::create('/workflow/formdemo', 'POST', [
+       $rej_ped_form =  Request::create('/workflow/formdemo', 'POST', [
             'name' => 'rejeitar_pedido',
             'version' => 1,
             'group' => 'workflow',
@@ -307,10 +307,33 @@ class CreateWorkflowDemo extends Migration
                 ] 
             ]'
         ]);
+        
+        $blame_form =  Request::create('/workflow/formdemo', 'POST', [
+            'name' => 'blame_bibliotecario',
+            'version' => 1,
+            'group' => 'workflow',
+            'description' => 'Formulário de registro de bibliotecário responsável por uma ação',
+            'fields' => '[ 
+                [
+                    { 
+                        "name": "user_codpes", 
+                        "type": "pessoa-usp", 
+                        "label": "Código do Bibliotecário", 
+                        "required": true
+                    },
+                    { 
+                        "name": "observacao", 
+                        "type": "text", 
+                        "label": "Observação"
+                    }
+                ] 
+            ]'
+        ]);
 
         $workflow_def = WorkflowDefinition::storeDefinition($workflow_demo);
         $workflow_def->publish();
-        app(FormDefinitionService::class)->createFromRequest($form_demo);
+        app(FormDefinitionService::class)->createFromRequest($rej_ped_form);
+        app(FormDefinitionService::class)->createFromRequest($blame_form);
     }
 
     /**
@@ -321,7 +344,10 @@ class CreateWorkflowDemo extends Migration
         $workflow_def = WorkflowDefinition::where('name', 'emprestimo_livro_simples')->first();
         $workflow_def->delete();
 
-        $form_demo = FormDefinition::where('name', 'rejeitar_pedido')->first();
-        $form_demo->delete();
+        $rej_ped_form = FormDefinition::where('name', 'rejeitar_pedido')->first();
+        $rej_ped_form->delete();
+
+        $blame_form = FormDefinition::where('name', 'blame_bibliotecario')->first();
+        $blame_form->delete();
     }
 };
