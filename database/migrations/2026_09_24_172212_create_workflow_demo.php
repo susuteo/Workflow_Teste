@@ -19,98 +19,263 @@ class CreateWorkflowDemo extends Migration
     {
         $workflow_demo = Request::create('/workflow/demo', 'POST', [
             'name' => 'emprestimo_livro_simples',
-            'description' => 'Workflow de exemplo para nova lógica, no contexto de biblioteca',
+            'description' => 'Empréstimo de Livro',
             'definition' => '
-            { 
-                "name": "emprestimo_livro_simples", 
-                "label": "Empréstimo de Livro", 
+            {
+                "name": "emprestimo_livro_simples",
+                "label": "Empréstimo de Livro",
                 "initial_places": [
                     "pedido"
-                ], 
-                "roles": [ 
+                ],
+                "roles": [
                     {
-                        "name": "usuario", 
-                        "label": "Usuário", 
+                        "name": "usuario",
+                        "label": "Usuário",
                         "source": "*senhaunica.Alunogr"
-                    }, 
+                    },
                     {
-                        "name": "bibliotecario", 
+                        "name": "bibliotecario",
                         "label": "Bibliotecário"
-                    } 
-                ], 
-                "places": [ 
+                    }
+                ],
+                "places": [
                     {
-                        "name": "pedido", 
-                        "label": "Enviar pedido", 
+                        "name": "pedido",
+                        "label": "Enviar pedido",
                         "roles": [
                             "usuario"
                         ]
-                    }, 
+                    },
                     {
-                        "name": "analise", 
-                        "label": "Em análise", 
+                        "name": "analise",
+                        "label": "Em análise",
                         "roles": [
                             "bibliotecario"
                         ]
-                    }, 
+                    },
                     {
-                        "name": "finalizado", 
-                        "label": "Finalizado", 
+                        "name": "retirada",
+                        "label": "Aguardando retirada",
+                        "roles": [
+                            "bibliotecario"
+                        ]
+                    },
+                    {
+                        "name": "aviso_prazo",
+                        "label": "Ciência do prazo de devolução",
                         "roles": [
                             "usuario"
                         ]
-                    } 
-                ], 
-                "transitions": [ 
-                    { 
-                        "name": "tr_enviar", 
-                        "label": "Enviar para análise", 
-                        "from": "pedido", 
+                    },
+                    {
+                        "name": "confirma_pedido",
+                        "label": "Confirmação do pedido",
+                        "roles": [
+                            "usuario"
+                        ]
+                    },
+                    {
+                        "name": "emprestado",
+                        "label": "Livro emprestado",
+                        "roles": [
+                            "usuario"
+                        ]
+                    },
+                    {
+                        "name": "conferencia",
+                        "label": "Conferência da devolução",
+                        "roles": [
+                            "bibliotecario"
+                        ]
+                    },
+                    {
+                        "name": "multa",
+                        "label": "Multa pendente",
+                        "roles": [
+                            "usuario"
+                        ]
+                    },
+                    {
+                        "name": "finalizado",
+                        "label": "Finalizado",
+                        "roles": [
+                            "usuario"
+                        ]
+                    }
+                ],
+                "transitions": [
+                    {
+                        "name": "tr_enviar",
+                        "label": "Enviar para análise",
+                        "from": "pedido",
                         "tos": [
                             "analise"
-                        ] 
-                    }, 
-                    { 
-                    "name": "tr_aprovar", 
-                    "label": "Aprovar pedido de empréstimo", 
-                    "from": "analise", 
-                    "tos": [
-                        "finalizado"
-                    ],
-                    "form": false, 
-                    "notifications": { 
+                        ]
+                    },
+                    {
+                        "name": "tr_aprovar",
+                        "label": "Aprovar empréstimo",
+                        "from": "analise",
+                        "tos": [
+                            "confirma_pedido",
+                            "aviso_prazo"
+                        ],
+                        "form": false,
+                        "notifications": {
+                            "append_roles": [
+                                "usuario"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tr_rejeitar",
+                        "label": "Solicitar correção",
+                        "from": "analise",
+                        "tos": [
+                            "pedido"
+                        ],
+                        "form": "rejeitar_pedido",
+                        "bindings": [
+                            {
+                                "attribute": "bibliotecario_rej",
+                                "from": "form.user_codpes",
+                                "resolver": "user_by_codpes"
+                            }
+                        ],
+                        "notifications": {
+                            "append_roles": [
+                                "usuario"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tr_negar",
+                        "label": "Negar empréstimo",
+                        "from": "analise",
+                        "tos": [
+                            "finalizado"
+                        ],
+                        "form": "rejeitar_pedido",
+                        "bindings": [
+                            {
+                                "attribute": "bibliotecario_neg",
+                                "from": "form.user_codpes",
+                                "resolver": "user_by_codpes"
+                            }
+                        ],
+                        "notifications": {
+                            "append_roles": [
+                                "usuario"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tr_confirma_pedido",
+                        "label": "Confirmar pedido",
+                        "from": "confirma_pedido",
+                        "tos": [
+                            "retirada"
+                        ],
+                        "notifications": {
                             "append_roles": [
                                 "bibliotecario"
                             ]
-                        } 
-                    }, 
+                        }
+                    },
                     {
-                        "name": "tr_rejeitar",
-                        "label":"Solicitar correção",
-                        "from":"analise",
-                        "tos":[
-                            "pedido"
+                        "name": "tr_ciente",
+                        "label": "Estou ciente do prazo",
+                        "from": "aviso_prazo",
+                        "tos": [
+                            "retirada"
+                        ]
+                    },
+                    {
+                        "name": "tr_retirar",
+                        "label": "Registrar retirada",
+                        "from": "retirada",
+                        "tos": [
+                            "emprestado"
                         ],
-                        "form":"rejeitar_pedido",
-                        "bindings":[
+                        "form": "registrar_retirada",
+                        "bindings": [
                             {
-                                "attribute":"bibliotecario",
-                                "from":"form.user_codpes",
-                                "resolver":"user_by_codpes"
+                                "attribute": "bibliotecario_ret",
+                                "from": "form.user_codpes",
+                                "resolver": "user_by_codpes"
                             }
+                        ]
+                    },
+                    {
+                        "name": "tr_devolver",
+                        "label": "Devolver livro",
+                        "from": "emprestado",
+                        "tos": [
+                            "conferencia"
                         ],
-                        "notifications":{
-                            "append_roles":[
-                                "usuario"
-                            ],
-                            "emails":[
-                                "greisvini@gmail.com"
+                        "notifications": {
+                            "append_roles": [
+                                "bibliotecario"
                             ]
                         }
-                    } 
-                ] 
-            }',
-        ]);
+                    },
+                    {
+                        "name": "tr_conferir_ok",
+                        "label": "Devolução em dia",
+                        "from": "conferencia",
+                        "tos": [
+                            "finalizado"
+                        ],
+                        "form": "conferencia_devolucao",
+                        "bindings": [
+                            {
+                                "attribute": "bibliotecario_conf",
+                                "from": "form.user_codpes",
+                                "resolver": "user_by_codpes"
+                            }
+                        ],
+                        "notifications": {
+                            "append_roles": [
+                                "usuario"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tr_conferir_atraso",
+                        "label": "Devolução com atraso",
+                        "from": "conferencia",
+                        "tos": [
+                            "multa"
+                        ],
+                        "form": "conferencia_devolucao",
+                        "bindings": [
+                            {
+                                "attribute": "bibliotecario_conf",
+                                "from": "form.user_codpes",
+                                "resolver": "user_by_codpes"
+                            }
+                        ],
+                        "notifications": {
+                            "append_roles": [
+                                "usuario"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tr_pagar_multa",
+                        "label": "Registrar pagamento",
+                        "from": "multa",
+                        "tos": [
+                            "finalizado"
+                        ],
+                        "notifications": {
+                            "append_roles": [
+                                "bibliotecario"
+                            ]
+                        }
+                    }
+                ]
+            }',]);
 
        $form_demo =  Request::create('/workflow/formdemo', 'POST', [
             'name' => 'rejeitar_pedido',
